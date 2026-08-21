@@ -22,13 +22,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const cancelModalBtn = document.getElementById('cancel-modal-btn');
     const finalizeBtn = document.getElementById('finalize-btn');
 
-    // =========================================================================
-    // GOOGLE SHEETS INTEGRATION CONFIGURATION
-    // Paste your Google Apps Script Web App Deployment URL below:
-    // =========================================================================
-    const GOOGLE_SHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzBeanxxaf_a53MNVU3jw0bIW3m2UeWZkCEXgxWAImBOT6Bxt4-WoughD1hrUQJHbg/exec";
+    // Loading Screen DOM Elements
+    const spideyLoadingScreen = document.getElementById('spidey-loading-screen');
+    const loadingProgressBar = document.getElementById('loading-progress-bar');
+    const loadingTargetText = document.getElementById('loading-target-text');
+    const loadingStatusQuote = document.getElementById('loading-status-quote');
 
-    // Storage Key
+    // =========================================================================
+    // SUPABASE DATABASE CONFIGURATION
+    // Replace with your project details from the Supabase Dashboard:
+    // =========================================================================
+    const SUPABASE_URL = "https://ygsuucddqgyvvkhhsitw.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_bVKNCCqCnZGO0j2Q-nm0Lg_zfwxs_6w";
+
+    // Initialize Supabase Client
+    const supabaseClient = (window.supabase && SUPABASE_URL && SUPABASE_URL !== "YOUR_SUPABASE_PROJECT_URL")
+        ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+        : null;
+
+    // Storage Key (Local cache fallback)
     const STORAGE_KEY = 'cypherverse_locked_teams';
 
     // State
@@ -154,6 +166,86 @@ document.addEventListener('DOMContentLoaded', () => {
         ]
     };
 
+    // =========================================================================
+    // SUPABASE DATABASE SYNC & STORAGE HELPERS
+    // =========================================================================
+
+    // Helper: Sync all locked teams from Supabase database into local memory/cache
+    const syncLockedTeamsFromSupabase = async () => {
+        if (!supabaseClient) {
+            console.log('ℹ️ Supabase client not initialized. Using browser localStorage.');
+            return;
+        }
+
+        try {
+            console.log('🕷️ Connecting to Supabase database...');
+            const { data, error } = await supabaseClient
+                .from('locked_teams')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.warn('⚠️ Supabase sync notice:', error.message);
+                return;
+            }
+
+            if (data && Array.isArray(data)) {
+                const mappedRecords = data.map(item => ({
+                    teamName: item.team_name,
+                    teamNumber: String(item.team_number).trim(),
+                    domain: item.domain,
+                    domainName: item.domain_name,
+                    problemId: item.problem_id,
+                    problemTitle: item.problem_title,
+                    problemDesc: item.problem_desc,
+                    lockedAt: item.locked_at || item.created_at
+                }));
+
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(mappedRecords));
+                console.log(`✅ Synced ${mappedRecords.length} locked teams from Supabase.`);
+            }
+        } catch (err) {
+            console.warn('⚠️ Supabase connection error:', err);
+        }
+    };
+
+    // Helper: Save new locked mission record to Supabase database
+    const saveRecordToSupabase = async (record) => {
+        if (!supabaseClient) {
+            console.log('ℹ️ Supabase credentials not set. Saved to local storage.');
+            return { success: true, localOnly: true };
+        }
+
+        try {
+            console.log('📤 Inserting mission record into Supabase...', record);
+            const { data, error } = await supabaseClient
+                .from('locked_teams')
+                .insert([
+                    {
+                        team_name: record.teamName,
+                        team_number: String(record.teamNumber).trim(),
+                        domain: record.domain,
+                        domain_name: record.domainName,
+                        problem_id: record.problemId,
+                        problem_title: record.problemTitle,
+                        problem_desc: record.problemDesc,
+                        locked_at: new Date().toISOString()
+                    }
+                ]);
+
+            if (error) {
+                console.error('❌ Supabase insert error:', error);
+                return { success: false, error };
+            }
+
+            console.log('✅ Mission record saved to Supabase table `locked_teams`!');
+            return { success: true, data };
+        } catch (err) {
+            console.error('❌ Failed to save to Supabase:', err);
+            return { success: false, error: err };
+        }
+    };
+
     // Helper: Retrieve all locked teams from LocalStorage
     const getLockedTeams = () => {
         try {
@@ -165,12 +257,47 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Helper: Check if a team number is already taken/locked
+    // Helper: Synchronous check from local cache
     const isTeamNumberLocked = (teamNum) => {
         if (!teamNum) return false;
         const normalizedNum = String(teamNum).trim();
         const lockedList = getLockedTeams();
         return lockedList.some(item => String(item.teamNumber).trim() === normalizedNum);
+    };
+
+    // Helper: Real-time Live Supabase Database Check
+    const checkTeamNumberIsTaken = async (teamNum) => {
+        if (!teamNum) return false;
+        const normalizedNum = String(teamNum).trim();
+
+        // 1. Quick check from memory/localStorage
+        if (isTeamNumberLocked(normalizedNum)) {
+            return true;
+        }
+
+        // 2. Query Supabase database in real-time
+        if (supabaseClient) {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('locked_teams')
+                    .select('team_number')
+                    .eq('team_number', normalizedNum)
+                    .limit(1);
+
+                if (!error && data && data.length > 0) {
+                    // Update cache with this taken number
+                    const lockedList = getLockedTeams();
+                    if (!lockedList.some(i => String(i.teamNumber).trim() === normalizedNum)) {
+                        lockedList.push({ teamNumber: normalizedNum });
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(lockedList));
+                    }
+                    return true;
+                }
+            } catch (err) {
+                console.warn('Real-time database check error:', err);
+            }
+        }
+        return false;
     };
 
     // Helper: Show Error on screen
@@ -356,16 +483,94 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Live validation for team number
-    teamNumberInput.addEventListener('input', () => {
-        const val = teamNumberInput.value.trim();
-        if (val && isTeamNumberLocked(val)) {
-            showError(`⚠️ Team Number ${val} has already locked a mission! Team numbers can only be used once.`);
+    // Spider-Sense Audio Effect (Plays user-provided spidersense_ultmt.mp3)
+    const playSpiderSenseSound = () => {
+        try {
+            const audio = new Audio('spidersense_ultmt.mp3');
+            audio.volume = 0.95;
+            const playPromise = audio.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(err => {
+                    console.log('Spider-sense audio play fallback:', err);
+                    playSpideyMissionSound(); // Web audio synth fallback
+                });
+            }
+        } catch (e) {
+            console.warn('Spider-sense audio initialization error:', e);
+            playSpideyMissionSound();
+        }
+    };
+
+    // =========================================================================
+    // BACKGROUND 8-BIT SPIDER-MAN THEME MUSIC (Instant Zero-Delay Continuous Loop)
+    // =========================================================================
+    const bgAudio = document.getElementById('spidey-theme-music') || new Audio('spider_man_theme_8_bit.mp3');
+    bgAudio.loop = true;
+    bgAudio.volume = 0.5;
+    let isLoadingScreenActive = false;
+
+    const playBgMusic = () => {
+        if (isLoadingScreenActive) return;
+        bgAudio.muted = false;
+        const playPromise = bgAudio.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(() => {
+                // If browser blocks unmuted sound on reload, start muted stream and unmute on gesture
+                if (!isLoadingScreenActive) {
+                    bgAudio.muted = true;
+                    bgAudio.play().catch(() => {});
+                }
+            });
+        }
+    };
+
+    const pauseBgMusic = () => {
+        bgAudio.pause();
+    };
+
+    // Instant playback triggers: Unmutes and plays instantly on motion, touch, key, or reload
+    const instantAudioTrigger = () => {
+        if (isLoadingScreenActive) return;
+        bgAudio.muted = false;
+        if (bgAudio.paused) {
+            playBgMusic();
+        }
+    };
+
+    ['pointerdown', 'touchstart', 'mousedown', 'mousemove', 'mouseenter', 'keydown', 'scroll', 'focus', 'click', 'pageshow', 'load'].forEach(evt => {
+        window.addEventListener(evt, instantAudioTrigger, { capture: true, passive: true });
+        document.addEventListener(evt, instantAudioTrigger, { capture: true, passive: true });
+    });
+
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && !isLoadingScreenActive) {
+            instantAudioTrigger();
         }
     });
 
-    // Generate ONE random mission directive
-    const generateCards = () => {
+    // Attempt immediate unmuted playback
+    playBgMusic();
+
+    // Real-time Live Debounced Validation for Team Number
+    let teamNumberDebounceTimer = null;
+    teamNumberInput.addEventListener('input', () => {
+        const val = teamNumberInput.value.trim();
+        if (!val) {
+            errorMessage.classList.remove('show');
+            return;
+        }
+
+        clearTimeout(teamNumberDebounceTimer);
+        teamNumberDebounceTimer = setTimeout(async () => {
+            const isTaken = await checkTeamNumberIsTaken(val);
+            if (isTaken) {
+                showError(`⚠️ Team Number ${val} is already registered in the database! Team numbers can only be used once.`);
+            }
+        }, 250);
+    });
+
+    // Generate ONE random mission directive with Spider-Sense Loading Screen
+    const generateCards = async () => {
         const teamName = teamNameInput.value.trim();
         const teamNumber = teamNumberInput.value.trim();
         const category = categorySelect.value;
@@ -382,9 +587,13 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // ONE-TIME TEAM NUMBER CHECK:
-        if (isTeamNumberLocked(teamNumber)) {
-            showError(`⛔ Team Number ${teamNumber} is already locked and cannot be used again!`);
+        // ONE-TIME TEAM NUMBER CHECK (Real-time Supabase query):
+        generateBtn.disabled = true;
+        const isTaken = await checkTeamNumberIsTaken(teamNumber);
+        generateBtn.disabled = false;
+
+        if (isTaken) {
+            showError(`⛔ Team Number ${teamNumber} is already registered in the database!`);
             teamNumberInput.focus();
             return;
         }
@@ -395,14 +604,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Play superhero sound on assignment
-        playSpideyMissionSound();
-
-        // Update State
-        state.teamName = teamName;
-        state.teamNumber = teamNumber;
-        state.category = category;
-
         // Pick exactly ONE problem at random from selected domain
         const categoryProblems = problemDatabase[category];
         if (!categoryProblems || categoryProblems.length === 0) {
@@ -412,41 +613,111 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const randomIndex = Math.floor(Math.random() * categoryProblems.length);
         const picked = categoryProblems[randomIndex];
+        state.teamName = teamName;
+        state.teamNumber = teamNumber;
+        state.category = category;
         state.currentCards = [picked];
         state.selectedCardId = picked.id;
 
         const fullDomainName = categorySelect.options[categorySelect.selectedIndex].text;
 
-        // Update UI Text
-        displayTeamName.textContent = state.teamName + ' (Team #' + state.teamNumber + ')';
+        // Clear error message if any
+        if (errorMessage) errorMessage.textContent = '';
 
-        // Update Dossier Banner Details
-        const dossierTeamName = document.getElementById('dossier-team-name');
-        const dossierTeamNumber = document.getElementById('dossier-team-number');
-        const dossierDomain = document.getElementById('dossier-domain');
-        const dossierStatus = document.getElementById('dossier-status');
+        // Flag loading active and stop background theme music so Spider-Sense audio plays cleanly
+        isLoadingScreenActive = true;
+        pauseBgMusic();
 
-        if (dossierTeamName) dossierTeamName.textContent = state.teamName;
-        if (dossierTeamNumber) dossierTeamNumber.textContent = '#' + state.teamNumber;
-        if (dossierDomain) dossierDomain.textContent = fullDomainName;
-        if (dossierStatus) dossierStatus.textContent = 'READY FOR ACCEPTANCE';
+        // Display Cinematic Spider-Sense Loading Screen (6 seconds duration)
+        if (spideyLoadingScreen) {
+            spideyLoadingScreen.classList.remove('hidden');
+            spideyLoadingScreen.classList.remove('fade-out');
 
-        // Transition panels
-        configPanel.classList.add('hidden');
-        resultsArea.classList.remove('hidden');
-        actionFooter.classList.remove('hidden');
-        confirmBtn.disabled = false;
+            if (loadingTargetText) {
+                loadingTargetText.textContent = `SPINNING MULTIVERSE FOR ${teamName.toUpperCase()} (#${teamNumber}) • DOMAIN: ${fullDomainName.toUpperCase()}`;
+            }
 
-        // Re-trigger Spider-Man animation
-        const heroReveal = document.getElementById('spidey-hero-reveal');
-        if (heroReveal) {
-            heroReveal.style.animation = 'none';
-            heroReveal.offsetHeight; /* trigger reflow */
-            heroReveal.style.animation = null;
+            // Dynamic sequence of status readouts across 6 seconds
+            if (loadingStatusQuote) {
+                loadingStatusQuote.textContent = '🕷️ DETECTING SPIDER-SENSE NEURAL HARMONICS...';
+                
+                setTimeout(() => {
+                    if (loadingStatusQuote) loadingStatusQuote.textContent = '🌐 CONNECTING TO EARTH-616 MULTIVERSE DATABASE...';
+                }, 1400);
+
+                setTimeout(() => {
+                    if (loadingStatusQuote) loadingStatusQuote.textContent = `⚡ SCANNING HIGH-PRIORITY DIRECTIVES FOR ${fullDomainName.toUpperCase()}...`;
+                }, 2800);
+
+                setTimeout(() => {
+                    if (loadingStatusQuote) loadingStatusQuote.textContent = '🧬 SYNTHESIZING NEURAL WEB PROBLEM SIGNATURE...';
+                }, 4200);
+
+                setTimeout(() => {
+                    if (loadingStatusQuote) loadingStatusQuote.textContent = '🎯 TARGET DIRECTIVE ACQUIRED! PREPARING DOSSIER...';
+                }, 5300);
+            }
+
+            if (loadingProgressBar) {
+                loadingProgressBar.style.transition = 'none';
+                loadingProgressBar.style.width = '0%';
+                setTimeout(() => {
+                    if (loadingProgressBar) {
+                        loadingProgressBar.style.transition = 'width 5.8s cubic-bezier(0.2, 0.8, 0.2, 1)';
+                        loadingProgressBar.style.width = '100%';
+                    }
+                }, 50);
+            }
         }
 
-        // Render the single card
-        renderCard();
+        // Play Spider-Sense Audio
+        playSpiderSenseSound();
+
+        // Reveal directives after 6 seconds cinematic sequence
+        setTimeout(() => {
+            // Update UI Text
+            displayTeamName.textContent = state.teamName + ' (Team #' + state.teamNumber + ')';
+
+            // Update Dossier Banner Details
+            const dossierTeamName = document.getElementById('dossier-team-name');
+            const dossierTeamNumber = document.getElementById('dossier-team-number');
+            const dossierDomain = document.getElementById('dossier-domain');
+            const dossierStatus = document.getElementById('dossier-status');
+
+            if (dossierTeamName) dossierTeamName.textContent = state.teamName;
+            if (dossierTeamNumber) dossierTeamNumber.textContent = '#' + state.teamNumber;
+            if (dossierDomain) dossierDomain.textContent = fullDomainName;
+            if (dossierStatus) dossierStatus.textContent = 'READY FOR ACCEPTANCE';
+
+            // Transition panels
+            configPanel.classList.add('hidden');
+            resultsArea.classList.remove('hidden');
+            actionFooter.classList.remove('hidden');
+            confirmBtn.disabled = false;
+
+            // Render the single card
+            renderCard();
+
+            // Fade out and close loading screen
+            if (spideyLoadingScreen) {
+                spideyLoadingScreen.classList.add('fade-out');
+                setTimeout(() => {
+                    spideyLoadingScreen.classList.add('hidden');
+                    spideyLoadingScreen.classList.remove('fade-out');
+                    if (loadingProgressBar) {
+                        loadingProgressBar.style.transition = 'none';
+                        loadingProgressBar.style.width = '0%';
+                    }
+                }, 400);
+            }
+
+            // Release loading lock and resume background theme music on loop
+            isLoadingScreenActive = false;
+            playBgMusic();
+
+            // Smooth scroll to directive card
+            resultsArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 6000);
     };
 
     // Render the single assigned card
@@ -514,9 +785,15 @@ document.addEventListener('DOMContentLoaded', () => {
         finalizeBtn.addEventListener('click', async () => {
             if (!state.selectedCardId) return;
 
-            // Final safety check on Team Number
-            if (isTeamNumberLocked(state.teamNumber)) {
-                alert(`⛔ Error: Team Number ${state.teamNumber} has already been registered.`);
+            finalizeBtn.disabled = true;
+            finalizeBtn.textContent = 'CHECKING DATABASE...';
+
+            // Real-time double verification before locking
+            const isTaken = await checkTeamNumberIsTaken(state.teamNumber);
+            if (isTaken) {
+                alert(`⛔ Error: Team Number ${state.teamNumber} is already registered in the database.`);
+                finalizeBtn.disabled = false;
+                finalizeBtn.textContent = 'LOCK & FINALIZE';
                 successModal.classList.add('hidden');
                 location.reload();
                 return;
@@ -525,12 +802,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const selectedCard = state.currentCards.find(c => c.id === state.selectedCardId);
             const categoryName = categorySelect.options[categorySelect.selectedIndex].text;
 
-            finalizeBtn.disabled = true;
-            finalizeBtn.textContent = 'RECORDING TO SHEET...';
+            finalizeBtn.textContent = 'SAVING TO DATABASE...';
             playMissionLockedSound();
 
-            // Store locked record in LocalStorage
-            const lockedList = getLockedTeams();
+            // Prepare record
             const newRecord = {
                 teamName: state.teamName,
                 teamNumber: String(state.teamNumber).trim(),
@@ -542,51 +817,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 lockedAt: new Date().toLocaleString()
             };
 
+            // 1. Persist to Supabase Database
+            const saveResult = await saveRecordToSupabase(newRecord);
+            if (!saveResult.success && saveResult.error && (saveResult.error.code === '23505' || saveResult.error.message.includes('unique'))) {
+                alert(`⛔ Error: Team Number ${state.teamNumber} was just registered by another user.`);
+                location.reload();
+                return;
+            }
+
+            // 2. Update local cache
+            const lockedList = getLockedTeams();
             lockedList.push(newRecord);
             localStorage.setItem(STORAGE_KEY, JSON.stringify(lockedList));
-
-            // Sync with Google Sheets (Await completion before reloading)
-            await sendToGoogleSheet(newRecord);
 
             finalizeBtn.textContent = 'LOCKED & SAVED!';
             finalizeBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
 
             setTimeout(() => {
-                alert(`🕷️ MISSION LOCKED & RECORDED!\n\nTeam #${state.teamNumber} (${state.teamName}) is officially assigned to: "${selectedCard.title}".\n\nSaved to Google Sheets!`);
+                alert(`🕷️ MISSION LOCKED & RECORDED!\n\nTeam #${state.teamNumber} (${state.teamName}) is officially assigned to: "${selectedCard.title}".\n\nSaved to database!`);
                 location.reload();
-            }, 800);
+            }, 600);
         });
     }
 
-    // Helper: Send Record to Google Sheet Web App
-    const sendToGoogleSheet = async (record) => {
-        if (!GOOGLE_SHEET_WEBAPP_URL || GOOGLE_SHEET_WEBAPP_URL.trim() === '') {
-            console.log('ℹ️ Google Sheet Web App URL not set. Data saved to browser localStorage.');
-            return;
-        }
-
-        try {
-            console.log('📤 Sending record to Google Sheet Web App...', record);
-
-            // Format URL with parameters + send POST body for 100% Google Apps Script compatibility
-            const params = new URLSearchParams(record).toString();
-            const targetUrl = GOOGLE_SHEET_WEBAPP_URL.includes('?')
-                ? `${GOOGLE_SHEET_WEBAPP_URL}&${params}`
-                : `${GOOGLE_SHEET_WEBAPP_URL}?${params}`;
-
-            await fetch(targetUrl, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: {
-                    'Content-Type': 'text/plain;charset=utf-8'
-                },
-                body: JSON.stringify(record)
-            });
-            console.log('✅ Sent successfully to Google Sheet!');
-        } catch (err) {
-            console.error('❌ Failed to send data to Google Sheet:', err);
-        }
-    };
+    // Initialize Supabase sync on startup
+    syncLockedTeamsFromSupabase();
 
     // Event Listeners
     generateBtn.addEventListener('click', generateCards);
@@ -611,9 +866,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Console utilities for testing or administrative reset if needed
     window.cypherverse = {
         getLockedTeams: () => getLockedTeams(),
-        clearAllLocks: () => {
+        clearLocalCache: () => {
             localStorage.removeItem(STORAGE_KEY);
-            console.log('All team number locks cleared.');
+            console.log('🧹 Local cache cleared.');
+        },
+        checkTeamNumber: async (num) => {
+            const taken = await checkTeamNumberIsTaken(num);
+            console.log(`Team #${num} taken:`, taken);
+            return taken;
         }
     };
 });

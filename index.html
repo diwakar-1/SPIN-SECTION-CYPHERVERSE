@@ -16,11 +16,40 @@
     <!-- CSS -->
     <link rel="stylesheet" href="style.css">
 
+    <!-- Preload Audio for Zero-Delay Instant Playback -->
+    <link rel="preload" href="spider_man_theme_8_bit.mp3" as="audio">
+    <link rel="preload" href="spidersense_ultmt.mp3" as="audio">
+
     <!-- Favicon -->
     <link rel="icon" href="/CypherVerse/static/images/spider.png" sizes="32x32">
 </head>
 
 <body>
+    <!-- Instant Autoplay Audio Element -->
+    <audio id="spidey-theme-music" src="spider_man_theme_8_bit.mp3" preload="auto" autoplay loop playsinline></audio>
+    <script>
+        (function() {
+            const a = document.getElementById('spidey-theme-music');
+            if (a) {
+                a.volume = 0.5;
+                const tryPlay = () => {
+                    a.play().catch(() => {
+                        // If browser blocks unmuted audio on reload, play muted then unmute on first motion/touch
+                        a.muted = true;
+                        a.play().then(() => {
+                            const unmute = () => {
+                                a.muted = false;
+                                ['click','touchstart','pointerdown','mousemove','keydown','scroll'].forEach(e => window.removeEventListener(e, unmute));
+                            };
+                            ['click','touchstart','pointerdown','mousemove','keydown','scroll'].forEach(e => window.addEventListener(e, unmute, { passive: true }));
+                        }).catch(() => {});
+                    });
+                };
+                tryPlay();
+            }
+        })();
+    </script>
+
     <!-- Background Spider-Man Universe System -->
     <div class="spidey-background">
         <div class="city-skyline-bg"></div>
@@ -200,20 +229,6 @@
 
             <!-- Results Section -->
             <section class="results-area hidden" id="results-area">
-                <!-- Heroic Spider-Man Reveal Section -->
-                <div class="spidey-hero-reveal" id="spidey-hero-reveal">
-                    <div class="spidey-hero-container">
-                        <div class="spidey-web-burst"></div>
-                        <div class="spidey-hero-badge-wrap">
-                            <img src="spiderman.png" alt="Spider-Man" class="spidey-hero-img" id="spidey-hero-img">
-                        </div>
-                        <div class="spidey-speech-bubble">
-                            <span class="bubble-tag">🕸️ SPIDER-SENSE TINGLING!</span>
-                            <span class="bubble-msg">MISSION DIRECTIVE ACQUIRED — WITH GREAT POWER COMES GREAT RESPONSIBILITY!</span>
-                        </div>
-                    </div>
-                </div>
-
                 <div class="results-header">
                     <h2>YOUR MISSION, <span id="display-team-name" class="highlight-spidey">TEAM</span></h2>
                     <p>Your assigned problem statement has been spun from the web.</p>
@@ -258,6 +273,49 @@
         </main>
     </div>
 
+    <!-- Spider-Sense Loading Screen -->
+    <div class="spidey-loading-screen hidden" id="spidey-loading-screen">
+        <div class="loading-backdrop-glow"></div>
+        <div class="loading-content">
+            <!-- Spider-Sense Wavy Tingling Alert Waves -->
+            <div class="spidersense-pulse-aura">
+                <div class="sense-wave wave-1"></div>
+                <div class="sense-wave wave-2"></div>
+                <div class="sense-wave wave-3"></div>
+            </div>
+
+            <!-- Spider-Man Showcase Image -->
+            <div class="loading-hero-wrapper">
+                <div class="loading-hero-glow"></div>
+                <div class="loading-web-burst"></div>
+                <img src="spiderman.png" alt="Spider-Man" class="loading-spiderman-img" id="loading-spiderman-img">
+            </div>
+
+            <!-- Animated Status Header & Spider-Sense Alert -->
+            <div class="loading-header">
+                <div class="spider-sense-badge">
+                    <span class="pulse-icon">⚡</span>
+                    <span>SPIDER-SENSE TINGLING!</span>
+                    <span class="pulse-icon">⚡</span>
+                </div>
+                <h2 class="loading-title">SPINNING MULTIVERSE DIRECTIVES</h2>
+                <p class="loading-subtitle" id="loading-target-text">SYNCHRONIZING WITH SPIDER-VERSE...</p>
+            </div>
+
+            <!-- Glowing Spider Progress Bar -->
+            <div class="loading-progress-wrapper">
+                <div class="loading-progress-bar" id="loading-progress-bar">
+                    <div class="progress-glow-head"></div>
+                </div>
+            </div>
+
+            <div class="loading-status-tip">
+                <span class="tip-dot"></span>
+                <span id="loading-status-quote">CALIBRATING NEURAL WEB SENSORS...</span>
+            </div>
+        </div>
+    </div>
+
     <!-- Confirm Assignment Modal -->
     <div class="success-modal hidden" id="success-modal">
         <div class="modal-content spidey-modal-card">
@@ -283,6 +341,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <!-- App Logic -->
     <script src="script.js"></script>
