@@ -21,34 +21,14 @@
     <link rel="preload" href="spidersense_ultmt.mp3" as="audio">
 
     <!-- Favicon -->
-    <link rel="icon" href="/CypherVerse/static/images/spider.png" sizes="32x32">
+    <link rel="icon" type="image/jpeg" href="favicon.jpg">
+    <link rel="shortcut icon" href="favicon.jpg">
+    <link rel="apple-touch-icon" href="favicon.jpg">
 </head>
 
 <body>
-    <!-- Instant Autoplay Audio Element -->
-    <audio id="spidey-theme-music" src="spider_man_theme_8_bit.mp3" preload="auto" autoplay loop playsinline></audio>
-    <script>
-        (function() {
-            const a = document.getElementById('spidey-theme-music');
-            if (a) {
-                a.volume = 0.5;
-                const tryPlay = () => {
-                    a.play().catch(() => {
-                        // If browser blocks unmuted audio on reload, play muted then unmute on first motion/touch
-                        a.muted = true;
-                        a.play().then(() => {
-                            const unmute = () => {
-                                a.muted = false;
-                                ['click','touchstart','pointerdown','mousemove','keydown','scroll'].forEach(e => window.removeEventListener(e, unmute));
-                            };
-                            ['click','touchstart','pointerdown','mousemove','keydown','scroll'].forEach(e => window.addEventListener(e, unmute, { passive: true }));
-                        }).catch(() => {});
-                    });
-                };
-                tryPlay();
-            }
-        })();
-    </script>
+    <!-- Background Spider-Man Theme Audio Element -->
+    <audio id="spidey-theme-music" src="spider_man_theme_8_bit.mp3" preload="auto" loop playsinline></audio>
 
     <!-- Background Spider-Man Universe System -->
     <div class="spidey-background">

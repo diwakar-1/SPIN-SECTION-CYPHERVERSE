@@ -483,72 +483,109 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Spider-Sense Audio Effect (Plays user-provided spidersense_ultmt.mp3)
+    // =========================================================================
+    // AUDIO SYSTEM: PRELOADED ZERO-LATENCY ENGINE WITH BUFFER LOCKING
+    // =========================================================================
+    
+    // Dedicated Preloaded Spider-Sense Audio Instance (buffered into memory immediately)
+    let spiderSenseAudio = null;
+    try {
+        spiderSenseAudio = new Audio('spidersense_ultmt.mp3');
+        spiderSenseAudio.preload = 'auto';
+        spiderSenseAudio.volume = 0.95;
+        spiderSenseAudio.load();
+    } catch (e) {
+        console.warn('Spider-Sense audio preload error:', e);
+    }
+
+    // Spider-Sense Audio Effect (Plays preloaded spidersense_ultmt.mp3 with zero buffer hitching)
     const playSpiderSenseSound = () => {
         try {
-            const audio = new Audio('spidersense_ultmt.mp3');
-            audio.volume = 0.95;
-            const playPromise = audio.play();
-            if (playPromise !== undefined) {
-                playPromise.catch(err => {
-                    console.log('Spider-sense audio play fallback:', err);
-                    playSpideyMissionSound(); // Web audio synth fallback
-                });
+            if (spiderSenseAudio) {
+                spiderSenseAudio.currentTime = 0;
+                spiderSenseAudio.volume = 0.95;
+                const playPromise = spiderSenseAudio.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(err => {
+                        console.log('Spider-sense audio fallback:', err);
+                        playSpideyMissionSound(); // Web audio synth fallback
+                    });
+                }
+            } else {
+                playSpideyMissionSound();
             }
         } catch (e) {
-            console.warn('Spider-sense audio initialization error:', e);
+            console.warn('Spider-sense audio play error:', e);
             playSpideyMissionSound();
         }
     };
 
-    // =========================================================================
-    // BACKGROUND 8-BIT SPIDER-MAN THEME MUSIC (Instant Zero-Delay Continuous Loop)
-    // =========================================================================
+    // Background 8-Bit Spider-Man Theme Music Manager
     const bgAudio = document.getElementById('spidey-theme-music') || new Audio('spider_man_theme_8_bit.mp3');
     bgAudio.loop = true;
     bgAudio.volume = 0.5;
+    bgAudio.preload = 'auto';
+
     let isLoadingScreenActive = false;
+    let isBgPlayPending = false;
 
     const playBgMusic = () => {
         if (isLoadingScreenActive) return;
+        if (!bgAudio.paused && !bgAudio.muted) return;
+        if (isBgPlayPending) return;
+
+        isBgPlayPending = true;
         bgAudio.muted = false;
         const playPromise = bgAudio.play();
         if (playPromise !== undefined) {
-            playPromise.catch(() => {
-                // If browser blocks unmuted sound on reload, start muted stream and unmute on gesture
-                if (!isLoadingScreenActive) {
+            playPromise.then(() => {
+                isBgPlayPending = false;
+            }).catch(() => {
+                isBgPlayPending = false;
+                // If browser autoplay policy blocks unmuted audio on start, start muted stream
+                if (!isLoadingScreenActive && bgAudio.paused) {
                     bgAudio.muted = true;
                     bgAudio.play().catch(() => {});
                 }
             });
+        } else {
+            isBgPlayPending = false;
         }
     };
 
     const pauseBgMusic = () => {
+        isBgPlayPending = false;
         bgAudio.pause();
     };
 
-    // Instant playback triggers: Unmutes and plays instantly on motion, touch, key, or reload
-    const instantAudioTrigger = () => {
+    // User Gesture Audio Unlocker (Clean, runs once on user interaction to unmute and start playback smoothly)
+    const unlockUserAudio = () => {
         if (isLoadingScreenActive) return;
         bgAudio.muted = false;
         if (bgAudio.paused) {
             playBgMusic();
         }
+        // Once unmuted, remove one-time interaction listeners to prevent continuous event overhead & buffering
+        const unlockEvents = ['pointerdown', 'touchstart', 'mousedown', 'keydown', 'click'];
+        unlockEvents.forEach(evt => {
+            window.removeEventListener(evt, unlockUserAudio, { capture: true });
+            document.removeEventListener(evt, unlockUserAudio, { capture: true });
+        });
     };
 
-    ['pointerdown', 'touchstart', 'mousedown', 'mousemove', 'mouseenter', 'keydown', 'scroll', 'focus', 'click', 'pageshow', 'load'].forEach(evt => {
-        window.addEventListener(evt, instantAudioTrigger, { capture: true, passive: true });
-        document.addEventListener(evt, instantAudioTrigger, { capture: true, passive: true });
+    const unlockEvents = ['pointerdown', 'touchstart', 'mousedown', 'keydown', 'click'];
+    unlockEvents.forEach(evt => {
+        window.addEventListener(evt, unlockUserAudio, { capture: true, passive: true });
+        document.addEventListener(evt, unlockUserAudio, { capture: true, passive: true });
     });
 
     document.addEventListener('visibilitychange', () => {
-        if (!document.hidden && !isLoadingScreenActive) {
-            instantAudioTrigger();
+        if (!document.hidden && !isLoadingScreenActive && bgAudio.paused) {
+            playBgMusic();
         }
     });
 
-    // Attempt immediate unmuted playback
+    // Attempt initial zero-delay playback
     playBgMusic();
 
     // Real-time Live Debounced Validation for Team Number
