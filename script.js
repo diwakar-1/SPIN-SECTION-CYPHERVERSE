@@ -12,6 +12,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const cardsContainer = document.getElementById('cards-container');
     const actionFooter = document.getElementById('action-footer');
 
+    const respinBtn = document.getElementById('respin-btn');
+    const respinBtnText = document.getElementById('respin-btn-text');
     const confirmBtn = document.getElementById('confirm-btn');
 
     const successModal = document.getElementById('success-modal');
@@ -49,7 +51,9 @@ document.addEventListener('DOMContentLoaded', () => {
         teamNumber: '',
         category: '',
         selectedCardId: null,
-        currentCards: []
+        currentCards: [],
+        respinCount: 0,
+        maxRespins: 3
     };
 
     // Database of problem statements by category (11 Domains)
@@ -658,6 +662,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // Reset respin counter for newly spun session
+        state.respinCount = 0;
+
         const randomIndex = Math.floor(Math.random() * categoryProblems.length);
         const picked = categoryProblems[randomIndex];
         state.teamName = teamName;
@@ -744,6 +751,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Render the single card
             renderCard();
+            updateRespinButtonUI();
 
             // Fade out and close loading screen
             if (spideyLoadingScreen) {
@@ -765,6 +773,106 @@ document.addEventListener('DOMContentLoaded', () => {
             // Smooth scroll to directive card
             resultsArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 6000);
+    };
+
+    // Helper: Update Respin Button State & Counter (3 max respins before acceptance)
+    const updateRespinButtonUI = () => {
+        if (!respinBtn || !respinBtnText) return;
+        const remaining = state.maxRespins - state.respinCount;
+        if (remaining > 0) {
+            respinBtn.disabled = false;
+            respinBtnText.textContent = `RESPIN DIRECTIVE (${remaining} LEFT)`;
+        } else {
+            respinBtn.disabled = true;
+            respinBtnText.textContent = 'NO RESPINS LEFT (0/3)';
+        }
+    };
+
+    // Re-spin directive up to 3 times before accepting mission
+    const respinCard = () => {
+        if (state.respinCount >= state.maxRespins) {
+            return;
+        }
+
+        const categoryProblems = problemDatabase[state.category];
+        if (!categoryProblems || categoryProblems.length === 0) return;
+
+        state.respinCount++;
+        updateRespinButtonUI();
+
+        // Pick a problem that is different from currently displayed one if possible
+        const available = categoryProblems.filter(p => p.id !== state.selectedCardId);
+        const pool = available.length > 0 ? available : categoryProblems;
+        const randomIndex = Math.floor(Math.random() * pool.length);
+        const picked = pool[randomIndex];
+
+        state.currentCards = [picked];
+        state.selectedCardId = picked.id;
+
+        const fullDomainName = categorySelect.options[categorySelect.selectedIndex].text;
+
+        // Flag loading active and pause background theme music
+        isLoadingScreenActive = true;
+        pauseBgMusic();
+
+        // Display Cinematic Spider-Sense Loading Screen
+        if (spideyLoadingScreen) {
+            spideyLoadingScreen.classList.remove('hidden');
+            spideyLoadingScreen.classList.remove('fade-out');
+
+            if (loadingTargetText) {
+                loadingTargetText.textContent = `RESPINNING MISSION (${state.respinCount}/3) FOR ${state.teamName.toUpperCase()} (#${state.teamNumber}) • DOMAIN: ${fullDomainName.toUpperCase()}`;
+            }
+
+            if (loadingStatusQuote) {
+                loadingStatusQuote.textContent = `🕷️ RE-SPINNING DIRECTIVE (${state.respinCount}/3)...`;
+
+                setTimeout(() => {
+                    if (loadingStatusQuote) loadingStatusQuote.textContent = '🌐 ACCESSING ALTERNATE TIMELINE IN MULTIVERSE...';
+                }, 1100);
+
+                setTimeout(() => {
+                    if (loadingStatusQuote) loadingStatusQuote.textContent = '🎯 TARGET DIRECTIVE RE-ACQUIRED!';
+                }, 2100);
+            }
+
+            if (loadingProgressBar) {
+                loadingProgressBar.style.transition = 'none';
+                loadingProgressBar.style.width = '0%';
+                setTimeout(() => {
+                    if (loadingProgressBar) {
+                        loadingProgressBar.style.transition = 'width 2.8s cubic-bezier(0.2, 0.8, 0.2, 1)';
+                        loadingProgressBar.style.width = '100%';
+                    }
+                }, 50);
+            }
+        }
+
+        // Play Spider-Sense Audio
+        playSpiderSenseSound();
+
+        // Reveal directives after 3 seconds respin sequence
+        setTimeout(() => {
+            renderCard();
+
+            if (spideyLoadingScreen) {
+                spideyLoadingScreen.classList.add('fade-out');
+                setTimeout(() => {
+                    spideyLoadingScreen.classList.add('hidden');
+                    spideyLoadingScreen.classList.remove('fade-out');
+                    if (loadingProgressBar) {
+                        loadingProgressBar.style.transition = 'none';
+                        loadingProgressBar.style.width = '0%';
+                    }
+                }, 400);
+            }
+
+            // Release loading lock and resume background theme music
+            isLoadingScreenActive = false;
+            playBgMusic();
+
+            resultsArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 3000);
     };
 
     // Render the single assigned card
@@ -905,6 +1013,10 @@ document.addEventListener('DOMContentLoaded', () => {
     categorySelect.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') generateCards();
     });
+
+    if (respinBtn) {
+        respinBtn.addEventListener('click', respinCard);
+    }
 
     if (confirmBtn) {
         confirmBtn.addEventListener('click', confirmSelection);
