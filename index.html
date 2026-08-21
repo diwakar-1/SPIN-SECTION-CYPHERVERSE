@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CYPHERVERSE — Spider Mission Directives Generator</title>
+    <title>CYPHERVERSE — Spider Extra-Credit Add-On Directives Generator</title>
 
     <!-- Google Fonts: Superhero Comic Typography (Bangers, Bebas Neue, Outfit, Inter) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -152,7 +152,7 @@
 
                 <div class="panel-header-tag">
                     <span class="tag-spider-icon">🕷️</span>
-                    <span>MISSION DIRECTIVES ENGINE</span>
+                    <span>EXTRA-CREDIT ADD-ON ENGINE</span>
                 </div>
 
                 <div class="form-group">
@@ -171,22 +171,21 @@
 
                 <div class="form-group">
                     <label for="category">
-                        <span class="label-bullet">🕷️</span> OPERATION DOMAIN
+                        <span class="label-bullet">🕷️</span> SELECTED THEME
                     </label>
                     <div class="select-wrapper">
                         <select id="category">
-                            <option value="" disabled selected>Select an Operation Domain...</option>
-                            <option value="aiml">Artificial Intelligence & Machine Learning</option>
-                            <option value="agentic">Agentic AI & Autonomous Systems</option>
-                            <option value="cybersecurity">Cybersecurity & Privacy</option>
-                            <option value="web3">Blockchain & Web3</option>
-                            <option value="sustainability">Sustainability & Climate Tech</option>
-                            <option value="fintech">FinTech & Digital Payments</option>
-                            <option value="healthtech">HealthTech</option>
-                            <option value="smartcities">Smart Cities & IoT</option>
-                            <option value="education">Education & EdTech</option>
-                            <option value="devtools">Developer Tools & Productivity</option>
-                            <option value="socialimpact">Social Impact</option>
+                            <option value="" disabled selected>Select a Hackathon Theme...</option>
+                            <option value="ml">Theme 1: Machine Learning (ML)</option>
+                            <option value="cybersecurity">Theme 2: Cybersecurity (CYBER)</option>
+                            <option value="ai">Theme 3: AI</option>
+                            <option value="web3">Theme 4: Blockchain & Web3</option>
+                            <option value="iot">Theme 5: Internet of Things (IoT)</option>
+                            <option value="datascience">Theme 6: Data Science</option>
+                            <option value="arvr">Theme 7: Augmented & Virtual Reality (AR/VR)</option>
+                            <option value="robotics">Theme 8: Robotics and Automation</option>
+                            <option value="cloud_devops">Theme 9: Cloud Computing & DevOps</option>
+                            <option value="cryptography">Theme 10: Cryptography</option>
                         </select>
                         <div class="select-icon">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ff4444"
@@ -200,7 +199,7 @@
                 <!-- Main Spider Button -->
                 <button id="generate-btn" class="spidey-primary-btn">
                     <span class="btn-spider-icon">🕸️</span>
-                    <span>GENERATE DIRECTIVES</span>
+                    <span>SPIN ADD-ON DIRECTIVE</span>
                     <div class="btn-shine-effect"></div>
                 </button>
                 <div id="error-message" class="error-message"></div>
@@ -209,14 +208,14 @@
             <!-- Results Section -->
             <section class="results-area hidden" id="results-area">
                 <div class="results-header">
-                    <h2>YOUR MISSION, <span id="display-team-name" class="highlight-spidey">TEAM</span></h2>
-                    <p>Your assigned problem statement has been spun from the web.</p>
+                    <h2>ASSIGNED ADD-ON, <span id="display-team-name" class="highlight-spidey">TEAM</span></h2>
+                    <p>Your assigned extra-credit feature directive has been spun from the multiverse web.</p>
                 </div>
 
                 <!-- Prominent Assigned Team & User Details Dossier Banner -->
                 <div class="team-details-banner" id="team-details-banner">
                     <div class="dossier-header">
-                        <span class="dossier-tag">🕷️ SPIDER MISSION DOSSIER • ASSIGNED HERO</span>
+                        <span class="dossier-tag">🕷️ SPIDER ADD-ON DOSSIER • ASSIGNED HERO</span>
                         <span class="dossier-status-pill"><span class="pulse-dot"></span> DIRECTIVE ACTIVE</span>
                     </div>
                     <div class="dossier-grid">
@@ -229,7 +228,7 @@
                             <span class="dossier-val highlight-val" id="dossier-team-number">--</span>
                         </div>
                         <div class="dossier-item">
-                            <span class="dossier-label">OPERATION DOMAIN</span>
+                            <span class="dossier-label">ASSIGNED THEME</span>
                             <span class="dossier-val" id="dossier-domain">--</span>
                         </div>
                         <div class="dossier-item">
@@ -240,17 +239,17 @@
                 </div>
 
                 <div class="cards-grid" id="cards-container">
-                    <!-- Dynamic problem card injected here -->
+                    <!-- Dynamic addon card injected here -->
                 </div>
 
                 <div class="action-footer hidden" id="action-footer">
                     <button class="spidey-respin-btn" id="respin-btn">
                         <span class="btn-spider-icon">🔄</span>
-                        <span id="respin-btn-text">RESPIN DIRECTIVE (3 LEFT)</span>
+                        <span id="respin-btn-text">RESPIN ADD-ON (3 LEFT)</span>
                     </button>
                     <button class="spidey-success-btn" id="confirm-btn">
                         <span class="btn-spider-icon">🕸️</span>
-                        <span>ACCEPT MISSION</span>
+                        <span>ACCEPT ADD-ON</span>
                     </button>
                 </div>
             </section>
@@ -308,15 +307,15 @@
                 <div class="indian-spidey-glow"></div>
                 <img src="indianspiderman-removebg-preview.png" alt="Indian Spider-Man" class="indian-spidey-img">
             </div>
-            <h3 class="modal-title">CONFIRM MISSION LOCK</h3>
+            <h3 class="modal-title">CONFIRM ADD-ON LOCK</h3>
 
             <div class="details-summary">
                 <p><strong>TEAM NAME:</strong> <span id="locked-team" class="highlight-spidey"></span></p>
                 <p><strong>TEAM NUMBER:</strong> <span id="locked-team-number" class="highlight-spidey"></span></p>
-                <p><strong>OPERATION DOMAIN:</strong> <span id="locked-domain" class="highlight-spidey"></span></p>
+                <p><strong>ASSIGNED THEME:</strong> <span id="locked-domain" class="highlight-spidey"></span></p>
             </div>
 
-            <p class="target-label">LOCKED TARGET STATEMENT:</p>
+            <p class="target-label">LOCKED EXTRA-CREDIT ADD-ON DIRECTIVE:</p>
             <div class="locked-problem" id="locked-problem"></div>
 
             <div class="modal-btn-row">
