@@ -257,47 +257,48 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Helper: Synchronous check from local cache
+    // Helper: Check if team number is a valid integer between 1 and 175
+    const isValidTeamNumber = (val) => {
+        if (val === null || val === undefined || val === '') return false;
+        const num = Number(val);
+        return Number.isInteger(num) && num >= 1 && num <= 175;
+    };
+
+    // Helper: Synchronous check from local cache (allowed up to 4 times per team number)
     const isTeamNumberLocked = (teamNum) => {
         if (!teamNum) return false;
         const normalizedNum = String(teamNum).trim();
         const lockedList = getLockedTeams();
-        return lockedList.some(item => String(item.teamNumber).trim() === normalizedNum);
+        const count = lockedList.filter(item => String(item.teamNumber).trim() === normalizedNum).length;
+        return count >= 4;
     };
 
-    // Helper: Real-time Live Supabase Database Check
+    // Helper: Real-time Live Supabase Database Check (allows up to 4 selections)
     const checkTeamNumberIsTaken = async (teamNum) => {
         if (!teamNum) return false;
         const normalizedNum = String(teamNum).trim();
 
-        // 1. Quick check from memory/localStorage
-        if (isTeamNumberLocked(normalizedNum)) {
-            return true;
-        }
-
-        // 2. Query Supabase database in real-time
+        // 1. Query Supabase database in real-time
         if (supabaseClient) {
             try {
                 const { data, error } = await supabaseClient
                     .from('locked_teams')
                     .select('team_number')
-                    .eq('team_number', normalizedNum)
-                    .limit(1);
+                    .eq('team_number', normalizedNum);
 
-                if (!error && data && data.length > 0) {
-                    // Update cache with this taken number
-                    const lockedList = getLockedTeams();
-                    if (!lockedList.some(i => String(i.teamNumber).trim() === normalizedNum)) {
-                        lockedList.push({ teamNumber: normalizedNum });
-                        localStorage.setItem(STORAGE_KEY, JSON.stringify(lockedList));
+                if (!error && data && Array.isArray(data)) {
+                    if (data.length >= 4) {
+                        return true;
                     }
-                    return true;
+                    return false;
                 }
             } catch (err) {
                 console.warn('Real-time database check error:', err);
             }
         }
-        return false;
+
+        // 2. Fallback check from local cache
+        return isTeamNumberLocked(normalizedNum);
     };
 
     // Helper: Show Error on screen
@@ -597,11 +598,18 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        if (!isValidTeamNumber(val)) {
+            showError('INVALID: Team number must be between 1 and 175.');
+            return;
+        }
+
         clearTimeout(teamNumberDebounceTimer);
         teamNumberDebounceTimer = setTimeout(async () => {
             const isTaken = await checkTeamNumberIsTaken(val);
             if (isTaken) {
-                showError(`⚠️ Team Number ${val} is already registered in the database! Team numbers can only be used once.`);
+                showError(`INVALID: Team Number ${val} is unavailable.`);
+            } else {
+                errorMessage.classList.remove('show');
             }
         }, 250);
     });
@@ -609,7 +617,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Generate ONE random mission directive with Spider-Sense Loading Screen
     const generateCards = async () => {
         const teamName = teamNameInput.value.trim();
-        const teamNumber = teamNumberInput.value.trim();
+        const rawTeamNumber = teamNumberInput.value.trim();
         const category = categorySelect.value;
 
         if (!teamName) {
@@ -618,19 +626,21 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        if (!teamNumber) {
-            showError('Please enter your team number.');
+        if (!rawTeamNumber || !isValidTeamNumber(rawTeamNumber)) {
+            showError('INVALID: Team number must be between 1 and 175.');
             teamNumberInput.focus();
             return;
         }
 
-        // ONE-TIME TEAM NUMBER CHECK (Real-time Supabase query):
+        const teamNumber = String(Number(rawTeamNumber));
+
+        // Real-time check if team number reached maximum 4 choices
         generateBtn.disabled = true;
         const isTaken = await checkTeamNumberIsTaken(teamNumber);
         generateBtn.disabled = false;
 
         if (isTaken) {
-            showError(`⛔ Team Number ${teamNumber} is already registered in the database!`);
+            showError(`INVALID: Team Number ${teamNumber} is unavailable.`);
             teamNumberInput.focus();
             return;
         }
@@ -828,7 +838,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Real-time double verification before locking
             const isTaken = await checkTeamNumberIsTaken(state.teamNumber);
             if (isTaken) {
-                alert(`⛔ Error: Team Number ${state.teamNumber} is already registered in the database.`);
+                alert(`⛔ INVALID: Team Number ${state.teamNumber} is no longer available.`);
                 finalizeBtn.disabled = false;
                 finalizeBtn.textContent = 'LOCK & FINALIZE';
                 successModal.classList.add('hidden');
@@ -857,7 +867,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // 1. Persist to Supabase Database
             const saveResult = await saveRecordToSupabase(newRecord);
             if (!saveResult.success && saveResult.error && (saveResult.error.code === '23505' || saveResult.error.message.includes('unique'))) {
-                alert(`⛔ Error: Team Number ${state.teamNumber} was just registered by another user.`);
+                alert(`⛔ INVALID: Team Number ${state.teamNumber} reached maximum limit.`);
                 location.reload();
                 return;
             }
