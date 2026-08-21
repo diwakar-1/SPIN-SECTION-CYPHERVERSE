@@ -603,7 +603,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (!isValidTeamNumber(val)) {
-            showError('INVALID: Team number must be between 1 and 175.');
+            showError('INVALID');
             return;
         }
 
@@ -611,7 +611,7 @@ document.addEventListener('DOMContentLoaded', () => {
         teamNumberDebounceTimer = setTimeout(async () => {
             const isTaken = await checkTeamNumberIsTaken(val);
             if (isTaken) {
-                showError(`INVALID: Team Number ${val} is unavailable.`);
+                showError('INVALID');
             } else {
                 errorMessage.classList.remove('show');
             }
@@ -631,7 +631,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (!rawTeamNumber || !isValidTeamNumber(rawTeamNumber)) {
-            showError('INVALID: Team number must be between 1 and 175.');
+            showError('INVALID');
             teamNumberInput.focus();
             return;
         }
@@ -644,7 +644,7 @@ document.addEventListener('DOMContentLoaded', () => {
         generateBtn.disabled = false;
 
         if (isTaken) {
-            showError(`INVALID: Team Number ${teamNumber} is unavailable.`);
+            showError('INVALID');
             teamNumberInput.focus();
             return;
         }
@@ -946,7 +946,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Real-time double verification before locking
             const isTaken = await checkTeamNumberIsTaken(state.teamNumber);
             if (isTaken) {
-                alert(`⛔ INVALID: Team Number ${state.teamNumber} is no longer available.`);
+                alert(`⛔ INVALID`);
                 finalizeBtn.disabled = false;
                 finalizeBtn.textContent = 'LOCK & FINALIZE';
                 successModal.classList.add('hidden');
@@ -975,7 +975,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // 1. Persist to Supabase Database
             const saveResult = await saveRecordToSupabase(newRecord);
             if (!saveResult.success && saveResult.error && (saveResult.error.code === '23505' || saveResult.error.message.includes('unique'))) {
-                alert(`⛔ INVALID: Team Number ${state.teamNumber} reached maximum limit.`);
+                alert(`⛔ INVALID`);
                 location.reload();
                 return;
             }
