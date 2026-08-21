@@ -170,6 +170,26 @@
                 </div>
 
                 <div class="form-group">
+                    <label for="team-members">
+                        <span class="label-bullet">🕷️</span> TEAM MEMBERS (2 TO 4 HEROES)
+                    </label>
+                    <div class="select-wrapper">
+                        <select id="team-members">
+                            <option value="" disabled selected>Select number of team members...</option>
+                            <option value="2">2 Members (2 Spin Chances)</option>
+                            <option value="3">3 Members (3 Spin Chances)</option>
+                            <option value="4">4 Members (4 Spin Chances)</option>
+                        </select>
+                        <div class="select-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ff4444"
+                                stroke-width="2.5">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
                     <label for="category">
                         <span class="label-bullet">🕷️</span> SELECTED THEME
                     </label>
@@ -178,7 +198,7 @@
                             <option value="" disabled selected>Select a Hackathon Theme...</option>
                             <option value="ml">Theme 1: Machine Learning (ML)</option>
                             <option value="cybersecurity">Theme 2: Cybersecurity (CYBER)</option>
-                            <option value="ai">Theme 3: AI</option>
+                            <option value="chatbots_ai">Theme 3: Chatbots and AI</option>
                             <option value="web3">Theme 4: Blockchain & Web3</option>
                             <option value="iot">Theme 5: Internet of Things (IoT)</option>
                             <option value="datascience">Theme 6: Data Science</option>
@@ -226,6 +246,10 @@
                         <div class="dossier-item">
                             <span class="dossier-label">TEAM NUMBER</span>
                             <span class="dossier-val highlight-val" id="dossier-team-number">--</span>
+                        </div>
+                        <div class="dossier-item">
+                            <span class="dossier-label">TEAM MEMBERS</span>
+                            <span class="dossier-val highlight-val" id="dossier-members">--</span>
                         </div>
                         <div class="dossier-item">
                             <span class="dossier-label">ASSIGNED THEME</span>
@@ -312,6 +336,7 @@
             <div class="details-summary">
                 <p><strong>TEAM NAME:</strong> <span id="locked-team" class="highlight-spidey"></span></p>
                 <p><strong>TEAM NUMBER:</strong> <span id="locked-team-number" class="highlight-spidey"></span></p>
+                <p><strong>TEAM MEMBERS:</strong> <span id="locked-members" class="highlight-spidey"></span></p>
                 <p><strong>ASSIGNED THEME:</strong> <span id="locked-domain" class="highlight-spidey"></span></p>
             </div>
 

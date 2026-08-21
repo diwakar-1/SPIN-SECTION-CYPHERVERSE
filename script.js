@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // DOM Elements
     const teamNameInput = document.getElementById('team-name');
     const teamNumberInput = document.getElementById('team-number');
+    const teamMembersSelect = document.getElementById('team-members');
     const categorySelect = document.getElementById('category');
     const generateBtn = document.getElementById('generate-btn');
     const errorMessage = document.getElementById('error-message');
@@ -19,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const successModal = document.getElementById('success-modal');
     const lockedTeam = document.getElementById('locked-team');
     const lockedTeamNumber = document.getElementById('locked-team-number');
+    const lockedMembers = document.getElementById('locked-members');
     const lockedDomain = document.getElementById('locked-domain');
     const lockedProblem = document.getElementById('locked-problem');
     const cancelModalBtn = document.getElementById('cancel-modal-btn');
@@ -48,11 +50,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let state = {
         teamName: '',
         teamNumber: '',
+        teamMembers: 2,
         category: '',
         selectedCardId: null,
         currentCards: [],
         respinCount: 0,
-        maxRespins: 3
+        maxRespins: 1 // Default: 2 members = 2 total chances (1 initial + 1 respin)
     };
 
     // =========================================================================
@@ -1754,6 +1757,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const teamName = teamNameInput.value.trim();
             const rawTeamNumber = teamNumberInput.value.trim();
+            const rawTeamMembers = teamMembersSelect ? teamMembersSelect.value : '';
             const category = categorySelect.value;
 
             if (!teamName) {
@@ -1787,6 +1791,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            const numMembers = parseInt(rawTeamMembers, 10);
+            if (!numMembers || numMembers < 2 || numMembers > 4) {
+                showError('Please select number of team members (2 to 4 heroes).');
+                if (teamMembersSelect) teamMembersSelect.focus();
+                return;
+            }
+
             if (!category) {
                 showError('Please select a hackathon theme.');
                 categorySelect.focus();
@@ -1799,7 +1810,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // Reset respin counter for newly spun session
+            // Set dynamic spin chances based on team members count (2, 3, or 4 chances total)
+            state.teamMembers = numMembers;
+            state.maxRespins = numMembers - 1; // 2 members = 1 respin (2 total chances), 3 = 2 respins, 4 = 3 respins
             state.respinCount = 0;
 
             const randomIndex = Math.floor(Math.random() * categoryProblems.length);
@@ -1823,7 +1836,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 spideyLoadingScreen.classList.remove('fade-out');
 
                 if (loadingTargetText) {
-                    loadingTargetText.textContent = `SPINNING ADD-ON FOR ${teamName.toUpperCase()} (#${teamNumber}) • THEME: ${fullDomainName.toUpperCase()}`;
+                    loadingTargetText.textContent = `SPINNING ADD-ON FOR ${teamName.toUpperCase()} (#${teamNumber} • ${state.teamMembers} HEROES • ${state.teamMembers} CHANCES) • THEME: ${fullDomainName.toUpperCase()}`;
                 }
 
                 if (loadingStatusQuote) {
@@ -1838,7 +1851,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }, 2800);
 
                     setTimeout(() => {
-                        if (loadingStatusQuote) loadingStatusQuote.textContent = '🧬 SYNTHESIZING FEATURE SPECIFICATION & CRITERIA...';
+                        if (loadingStatusQuote) loadingStatusQuote.textContent = `🧬 ALLOCATING ${state.teamMembers} QUANTUM SPIN CHANCES...`;
                     }, 4200);
 
                     setTimeout(() => {
@@ -1862,15 +1875,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Reveal directives after 6 seconds cinematic sequence
             setTimeout(() => {
-                displayTeamName.textContent = state.teamName + ' (Team #' + state.teamNumber + ')';
+                displayTeamName.textContent = state.teamName + ' (Team #' + state.teamNumber + ' • ' + state.teamMembers + ' Heroes)';
 
                 const dossierTeamName = document.getElementById('dossier-team-name');
                 const dossierTeamNumber = document.getElementById('dossier-team-number');
+                const dossierMembers = document.getElementById('dossier-members');
                 const dossierDomain = document.getElementById('dossier-domain');
                 const dossierStatus = document.getElementById('dossier-status');
 
                 if (dossierTeamName) dossierTeamName.textContent = state.teamName;
                 if (dossierTeamNumber) dossierTeamNumber.textContent = '#' + state.teamNumber;
+                if (dossierMembers) dossierMembers.textContent = `${state.teamMembers} Heroes (${state.teamMembers} Total Spins)`;
                 if (dossierDomain) dossierDomain.textContent = fullDomainName;
                 if (dossierStatus) dossierStatus.textContent = 'READY FOR ACCEPTANCE';
 
@@ -1906,20 +1921,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Helper: Update Respin Button State & Counter (3 max respins before acceptance)
+    // Helper: Update Respin Button State & Counter (based on team member count)
     const updateRespinButtonUI = () => {
         if (!respinBtn || !respinBtnText) return;
         const remaining = state.maxRespins - state.respinCount;
+        const chanceIndex = state.respinCount + 1;
+        const totalChances = state.teamMembers;
+
         if (remaining > 0) {
             respinBtn.disabled = false;
-            respinBtnText.textContent = `RESPIN ADD-ON (${remaining} LEFT)`;
+            respinBtnText.textContent = `RESPIN ADD-ON (${remaining} LEFT • CHANCE ${chanceIndex}/${totalChances})`;
         } else {
             respinBtn.disabled = true;
-            respinBtnText.textContent = 'NO RESPINS LEFT (0/3)';
+            respinBtnText.textContent = `ALL ${totalChances} CHANCES USED (${totalChances}/${totalChances})`;
         }
     };
 
-    // Re-spin directive up to 3 times before accepting mission
+    // Re-spin directive up to teamMembers count before accepting mission
     const respinCard = () => {
         if (state.respinCount >= state.maxRespins) {
             return;
@@ -1949,11 +1967,11 @@ document.addEventListener('DOMContentLoaded', () => {
             spideyLoadingScreen.classList.remove('fade-out');
 
             if (loadingTargetText) {
-                loadingTargetText.textContent = `RESPINNING ADD-ON (${state.respinCount}/3) FOR ${state.teamName.toUpperCase()} (#${state.teamNumber}) • THEME: ${fullDomainName.toUpperCase()}`;
+                loadingTargetText.textContent = `RESPINNING ADD-ON (SPIN ${state.respinCount + 1}/${state.teamMembers}) FOR ${state.teamName.toUpperCase()} (#${state.teamNumber}) • THEME: ${fullDomainName.toUpperCase()}`;
             }
 
             if (loadingStatusQuote) {
-                loadingStatusQuote.textContent = `🕷️ RE-SPINNING ADD-ON DIRECTIVE (${state.respinCount}/3)...`;
+                loadingStatusQuote.textContent = `🕷️ RE-SPINNING ADD-ON DIRECTIVE (CHANCE ${state.respinCount + 1}/${state.teamMembers})...`;
 
                 setTimeout(() => {
                     if (loadingStatusQuote) loadingStatusQuote.textContent = '🌐 ACCESSING ALTERNATE TIMELINE IN MULTIVERSE...';
@@ -2015,7 +2033,7 @@ document.addEventListener('DOMContentLoaded', () => {
         cardEl.innerHTML = `
             <div class="card-top-bar">
                 <div class="card-badge">${categoryName}</div>
-                <div class="assigned-team-chip">🕷️ Team #${state.teamNumber} • ${state.teamName}</div>
+                <div class="assigned-team-chip">🕷️ Team #${state.teamNumber} • ${state.teamName} (${state.teamMembers} Heroes • Spin ${state.respinCount + 1}/${state.teamMembers})</div>
             </div>
 
             <div class="addon-header-strip">
@@ -2060,7 +2078,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             <div class="card-meta">
                 <span>Extra-Credit Feature</span>
-                <span>STATUS: ASSIGNED</span>
+                <span>CHANCE USED: ${state.respinCount + 1} OF ${state.teamMembers}</span>
             </div>
         `;
 
@@ -2076,6 +2094,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         lockedTeam.textContent = state.teamName;
         lockedTeamNumber.textContent = '#' + state.teamNumber;
+        if (lockedMembers) lockedMembers.textContent = `${state.teamMembers} Heroes`;
         lockedDomain.textContent = categoryName;
 
         lockedProblem.innerHTML = `
@@ -2125,11 +2144,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const newRecord = {
                 teamName: state.teamName,
                 teamNumber: String(state.teamNumber).trim(),
+                teamMembers: state.teamMembers,
                 domain: state.category,
                 domainName: categoryName,
                 problemId: selectedCard.id,
                 problemTitle: selectedCard.title,
-                problemDesc: `${selectedCard.concept || ''} | Verification: ${selectedCard.verification || ''}`,
+                problemDesc: `[${state.teamMembers} Members] ${selectedCard.concept || ''} | Verification: ${selectedCard.verification || ''}`,
                 lockedAt: new Date().toLocaleString()
             };
 
@@ -2150,7 +2170,7 @@ document.addEventListener('DOMContentLoaded', () => {
             finalizeBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
 
             setTimeout(() => {
-                alert(`🕷️ ADD-ON DIRECTIVE LOCKED & RECORDED!\n\nTeam #${state.teamNumber} (${state.teamName}) is officially assigned to Add-On: "${selectedCard.title}".\n\nSaved to database!`);
+                alert(`🕷️ ADD-ON DIRECTIVE LOCKED & RECORDED!\n\nTeam #${state.teamNumber} (${state.teamName}, ${state.teamMembers} Members) is officially assigned to Add-On: "${selectedCard.title}".\n\nSaved to database!`);
                 location.reload();
             }, 600);
         });
@@ -2172,6 +2192,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (teamNumberInput) {
         teamNumberInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && teamMembersSelect) teamMembersSelect.focus();
+        });
+    }
+
+    if (teamMembersSelect) {
+        teamMembersSelect.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') categorySelect.focus();
         });
     }
