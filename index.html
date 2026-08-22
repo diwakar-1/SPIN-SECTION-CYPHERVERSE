@@ -155,18 +155,33 @@
                     <span>EXTRA-CREDIT ADD-ON ENGINE</span>
                 </div>
 
+                <!-- Spin Time Over Notice Banner -->
+                <div class="spin-closed-alert">
+                    <div class="spin-timeover-image-wrapper">
+                        <img src="timeover1.png" alt="Time Over Buddy - Spider-Man" class="spin-timeover-img">
+                    </div>
+                    <div class="spin-timeover-badge">
+                        <span class="timeover-comic-text">TIME OVER BUDDY!</span>
+                    </div>
+                    <div class="spin-closed-header">
+                        <span class="spin-closed-icon">⏳</span>
+                        <span class="spin-closed-title">SPINNING WINDOW HAS CLOSED</span>
+                    </div>
+                    <p class="spin-closed-desc">The allotted time to spin and select new extra-credit add-on directives has ended. All directives are now locked.</p>
+                </div>
+
                 <div class="form-group">
                     <label for="team-name">
                         <span class="label-bullet">🕷️</span> TEAM NAME
                     </label>
-                    <input type="text" id="team-name" placeholder="Enter your team name" autocomplete="off">
+                    <input type="text" id="team-name" placeholder="Spinning window closed" autocomplete="off" disabled>
                 </div>
 
                 <div class="form-group">
                     <label for="team-number">
                         <span class="label-bullet">🕷️</span> TEAM NUMBER
                     </label>
-                    <input type="number" id="team-number" placeholder="Enter your team number..." autocomplete="off">
+                    <input type="number" id="team-number" placeholder="Spinning window closed" autocomplete="off" disabled>
                 </div>
 
                 <div class="form-group">
@@ -174,8 +189,8 @@
                         <span class="label-bullet">🕷️</span> TEAM MEMBERS (2 TO 4 HEROES)
                     </label>
                     <div class="select-wrapper">
-                        <select id="team-members">
-                            <option value="" disabled selected>Select number of team members...</option>
+                        <select id="team-members" disabled>
+                            <option value="" disabled selected>Spinning window closed...</option>
                             <option value="2">2 Members</option>
                             <option value="3">3 Members</option>
                             <option value="4">4 Members</option>
@@ -194,8 +209,8 @@
                         <span class="label-bullet">🕷️</span> SELECTED THEME
                     </label>
                     <div class="select-wrapper">
-                        <select id="category">
-                            <option value="" disabled selected>Select a Hackathon Theme...</option>
+                        <select id="category" disabled>
+                            <option value="" disabled selected>Spinning window closed...</option>
                             <option value="ml">Theme 1: Machine Learning (ML)</option>
                             <option value="cybersecurity">Theme 2: Cybersecurity (CYBER)</option>
                             <option value="chatbots_ai">Theme 3: Chatbots and AI</option>
@@ -216,10 +231,10 @@
                     </div>
                 </div>
 
-                <!-- Main Spider Button -->
-                <button id="generate-btn" class="spidey-primary-btn">
-                    <span class="btn-spider-icon">🕸️</span>
-                    <span>SPIN ADD-ON DIRECTIVE</span>
+                <!-- Main Spider Button (Disabled) -->
+                <button id="generate-btn" class="spidey-primary-btn btn-spin-closed" disabled>
+                    <span class="btn-spider-icon">🔒</span>
+                    <span>SPIN TIME IS OVER • DIRECTIVES LOCKED</span>
                     <div class="btn-shine-effect"></div>
                 </button>
                 <div id="error-message" class="error-message"></div>

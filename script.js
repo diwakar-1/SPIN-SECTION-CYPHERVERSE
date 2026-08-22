@@ -43,6 +43,9 @@ document.addEventListener('DOMContentLoaded', () => {
         ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
         : null;
 
+    // Feature Flag: Controls whether the spin window is currently active or closed
+    const IS_SPIN_ENABLED = false;
+
     // Storage Key (Local cache fallback)
     const STORAGE_KEY = 'cypherverse_locked_teams';
 
@@ -1755,6 +1758,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Generate ONE random extra-credit add-on directive with Spider-Sense Loading Screen
     const generateCards = async () => {
         try {
+            if (!IS_SPIN_ENABLED) {
+                showError('⏳ The spinning window has closed. All directives are now locked.');
+                return;
+            }
+
             const teamName = teamNameInput.value.trim();
             const rawTeamNumber = teamNumberInput.value.trim();
             const rawTeamMembers = teamMembersSelect ? teamMembersSelect.value : '';
@@ -1939,7 +1947,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Re-spin directive up to teamMembers count before accepting mission
     const respinCard = () => {
-        if (state.respinCount >= state.maxRespins) {
+        if (!IS_SPIN_ENABLED || state.respinCount >= state.maxRespins) {
             return;
         }
 

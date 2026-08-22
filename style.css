@@ -388,6 +388,19 @@ select:focus {
     box-shadow: 0 0 20px var(--spidey-red-glow), 0 0 10px var(--spidey-blue-glow);
 }
 
+input:disabled,
+select:disabled {
+    background: rgba(15, 20, 32, 0.7);
+    color: #64748b;
+    border-color: rgba(230, 32, 32, 0.15);
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+input:disabled::placeholder {
+    color: #475569;
+}
+
 input::placeholder {
     color: #4a5c82;
 }
@@ -449,14 +462,124 @@ button {
     z-index: 1;
 }
 
-.spidey-primary-btn:hover {
+.spidey-primary-btn:hover:not(:disabled) {
     transform: translateY(-4px) scale(1.02);
     box-shadow: 0 10px 35px rgba(230, 32, 32, 0.8), 0 0 25px rgba(255, 209, 102, 0.6);
     background: linear-gradient(135deg, #ff4444 0%, #e60000 60%, #a00000 100%);
 }
 
-.spidey-primary-btn:active {
+.spidey-primary-btn:active:not(:disabled) {
     transform: scale(0.98);
+}
+
+.spidey-primary-btn:disabled,
+.btn-spin-closed {
+    background: linear-gradient(135deg, #2d1215 0%, #1a0b0d 100%) !important;
+    border: 2px solid #5a2328 !important;
+    color: #94a3b8 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    cursor: not-allowed !important;
+    transform: none !important;
+    opacity: 0.85;
+}
+
+.spidey-primary-btn:disabled .btn-shine-effect,
+.btn-spin-closed .btn-shine-effect {
+    display: none;
+}
+
+/* ============================================
+   SPIN CLOSED ALERT BANNER
+   ============================================ */
+.spin-closed-alert {
+    background: linear-gradient(135deg, rgba(230, 32, 32, 0.18) 0%, rgba(18, 10, 20, 0.95) 100%);
+    border: 2.5px solid rgba(255, 68, 68, 0.6);
+    border-radius: var(--radius-lg);
+    padding: 1.6rem 1.4rem;
+    margin-bottom: 1.8rem;
+    box-shadow: 0 8px 30px rgba(230, 32, 32, 0.35), inset 0 0 20px rgba(230, 32, 32, 0.15);
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    overflow: hidden;
+}
+
+.spin-timeover-image-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto 0.8rem auto;
+}
+
+.spin-timeover-img {
+    max-width: 230px;
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 8px 24px rgba(230, 32, 32, 0.55)) drop-shadow(0 2px 6px rgba(0, 0, 0, 0.8));
+    animation: spideyShrugFloat 3s ease-in-out infinite alternate;
+}
+
+@keyframes spideyShrugFloat {
+    0% {
+        transform: translateY(0px) rotate(0deg);
+    }
+    100% {
+        transform: translateY(-6px) rotate(-1deg);
+    }
+}
+
+.spin-timeover-badge {
+    margin-bottom: 0.8rem;
+}
+
+.timeover-comic-text {
+    font-family: var(--font-spidey-title);
+    font-size: 2.2rem;
+    letter-spacing: 0.08em;
+    color: #ffd166;
+    text-shadow: 
+        3px 3px 0px #000,
+        -2px -2px 0px #000,
+        2px -2px 0px #000,
+        -2px 2px 0px #000,
+        0 0 16px rgba(255, 209, 102, 0.8);
+    display: inline-block;
+    padding: 0.2rem 1.2rem;
+    background: linear-gradient(135deg, rgba(230, 32, 32, 0.5) 0%, rgba(153, 0, 0, 0.7) 100%);
+    border: 2px solid #ffd166;
+    border-radius: var(--radius-md);
+    transform: rotate(-1.5deg);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6), 0 0 15px rgba(255, 209, 102, 0.3);
+}
+
+.spin-closed-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 0.4rem;
+}
+
+.spin-closed-icon {
+    font-size: 1.3rem;
+}
+
+.spin-closed-title {
+    font-family: var(--font-spidey-sub);
+    font-size: 1.25rem;
+    letter-spacing: 0.12em;
+    color: #ff6b6b;
+    text-shadow: 0 0 10px rgba(255, 68, 68, 0.6);
+}
+
+.spin-closed-desc {
+    font-family: var(--font-heading);
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #cbd5e1;
+    line-height: 1.45;
 }
 
 .btn-spider-icon {
@@ -1931,6 +2054,15 @@ button {
 }
 
 @media (max-width: 580px) {
+    .spin-timeover-img {
+        max-width: 170px;
+    }
+
+    .timeover-comic-text {
+        font-size: 1.7rem;
+        padding: 0.15rem 0.9rem;
+    }
+
     .loading-hero-wrapper {
         width: 150px;
         height: 150px;
